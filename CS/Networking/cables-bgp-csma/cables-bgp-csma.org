@@ -1,0 +1,131 @@
+* Cables
+  Most common network cables are
+** cat5
+   electrical pulses over copper wires wrapped in plastic
+** cat5e
+   + reduces crosstalk
+   + less likely to retransmit data
+   + faster/more data transmitted on average
+** cat6
+   + even less crosstalk
+   - expensive
+   - shorter max distance at higher speeds (before data transmission becomes unreliable)
+** fiber
+   + resistant to electromagnetic signals
+   + fastest data transport
+   + longer max distance (before data transmission becomes unreliable)
+   - fragile
+   - expensive
+* Collision Domain
+  network segment where only one device can communicate at a time
+* Hub vs Switch vs Router
+| Device | Layer     | Protocol |
+|--------+-----------+----------|
+| Hub    | Physical  | Bits     |
+| Switch | Data Link | Ethernet |
+| Router | Network   | IP       |
+* Border Gateway Protocol (BGP)
+  used by routers to determine the most efficient route to send data to a destination
+  path vector routing protocol
+  runs on a 6-state finite state machine(FSM)
+** Idle
+   refuses all incoming BGP connections
+   initializes event triggers
+   initializes TCP connection with configured BGP peer
+   listens for TCP connection with configured BGP peer
+   changes state to Connect
+*** Possible Issues -> returns to Idle
+    TCP port 179 is not open
+    random TCP port >1023 not open (?)
+    peer address configured incorrectly on either router
+    autonomous system number configured incorrectly on either router
+** Connect
+   waits for successful TCP negotiation with peer
+   sends Open message to peer and changes state to OpenSent
+*** Possible Issues -> changes to Active
+    same as Idle possible issues
+** Active
+   restarts TCP connection to peer
+   sends Open message to peer and changes state to OpenSent
+*** Possible Issues -> returns to Idle
+    same as Idle possible issues
+    network congestion
+    flapping network interface
+** OpenSent
+   listens for Open message from peer
+   checks validity of message
+   sends KeepAlive message to peer
+   sets timers (60 sec?,?)
+   changes state to OpenConfirm
+*** Possible Issues -> sends Notification error message to peer
+    1 or more fields in Open message don't match configuration
+** OpenConfirm
+   listens for KeepAlive message from peer
+   change state to Established
+*** Possible Issues -> returns to Idle
+    timer expires before KeepAlive message
+    error condition occurs
+** Established
+   sends Update message to peer to exchange information about all routes advertised to peer
+*** Possible Issues -> sends Notification message to peer, returns to Idle
+    error in Update message
+* Tip for troubleshooting malfunctioning network connections
+  if what should be a full-duplex connection reports as a half-duplex,
+  something is probably wrong with its configuration
+* RJ45
+  usually have 2 small lights
+** Link light
+   lit when cable is connected to another device and both devices are on
+** Activity light
+   flashes when data is actively being transferred
+   Trivia: previously flashed in binary sequence as data was transferred,
+     no longer does as transfer speeds are too high (probably security as well)
+* Carrier Sense Multiple Access with Collision Detection (CSMA/CD)
+  if no activity is detected on network, send packet
+  if packet collides with another packet, stop sending it
+  wait random amount of time
+  resend packet
+* MAC address
+  48 bits long
+  24 bits - Organizationally Unique Identifier
+  24 bits - Unique Manufacturer ID
+* Unicast vs Multicast vs Broadcast
+  check the least significant bit (LSB)
+** LSB is 0
+   unicast
+   Ethernet frame intended for single destination
+   still sent to all devices in collision domain
+   only received and processed by intended destination address
+** LSB is 1
+   multicast
+   sent to everyone
+   accepted or discarded based on each receiving host's configuration
+** entire destination address is Fs
+   broadcast
+   used so devices on network can learn more about other devices
+   Address Resolution Protocol (ARP)
+* Ethernet Frame
+** Data packet
+   any kind of binary data being sent over a network link
+** Anatomy of an Ethernet frame
+*** Preamble - 64 bits
+**** Bit-Level Clock Synchronizer - 56 bits
+**** Start Frame Delimiter(SFD) - 8 bits
+*** Header - 112-144 bits
+**** MAC destination - 48 bits
+**** MAC source - 48 bits
+**** 802.1Q/802.1ad tag(optional) - 0 or 32 bits
+**** EtherType/Length - 16 bits
+     if value is <1500, indicates length of payload in bytes
+     if value is >1536, indicates EtherType
+       length of payload determined by location of interpacket gap and FCS
+*** Payload - 42/46-1500 bytes
+    42 is minimum if 802.1Q/802.1ad tag is present
+    46 is minimum if 802.1Q/802.1ad tag is not present
+    if payload is less than minimum, payload is padded out
+*** Frame Check Sequence (FCS) - 32 bits
+    Cyclic Redundancy Check (CRC)
+    hash of the rest of the frame
+    bit-flipped during sending to avoid a specific false positive situation
+      if the (hash?) has trailing zeroes it would result in a (possibly
+      incorrect) zero remainder

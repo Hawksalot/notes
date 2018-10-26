@@ -1,0 +1,145 @@
+* IP datagram
+  the payload of an Ethernet frame
+** Header - 20+ bytes (160+ bits)
+*** 4 bits - IP version
+    IPv4 vs IPv6
+*** 4 bits - Internet Header Length (IHL)
+    x * 4 bytes (32-bit words)
+    default value is 5
+    5 * 4 bytes = 20 bytes
+*** 8 bits - Differentiated Services (DS)
+    indicates what type of traffic packet is for (ex. streaming vs email)
+*** 16 bits - Total Length (TL)
+    length of entire datagram in bytes
+*** 16 bits - Identification
+    used by recipient to reassemble full message from fragments
+      spread out over multiple packets
+*** 3 bits - Flags
+**** 1 bit - Don't Fragment (DF)
+     usually used for testing Maximum Transmission Unit (MTU)
+**** 1 bit - More Fragments (MF)
+***** 0
+      last fragment of message OR
+      no fragmentation of message
+***** 1
+      message is fragmented
+      packet with this flag is not the last fragment
+**** 1 bit - Reserved
+     currently unused
+*** 13 bits - Fragment Offset
+    order of fragments
+    each fragment will have a different value
+    when reassembled in order, will constitute full message
+*** 16 bits - Time To Live (TTL)
+    how many network hops the datagram can take before being dropped
+    decrements after each hop so future hops know when to drop it
+*** 8 bits - Protocol
+| Hex | Dec | Protocol | Use                                      |
+|-----+-----+----------+------------------------------------------|
+|  00 |   0 | Reserved | N/A                                      |
+|  01 |   1 | ICMP     | mostly one-way diagnostics and errors    |
+|  02 |   2 | IGMP     | used to establish multicast membership   |
+|  03 |   3 | GGP      | obsolete alternative to TCP/UDP          |
+|  04 |   4 | IP-in-IP | encapsulate IP packet in IP packet       |
+|  06 |   6 | TCP      | reliable byte transmission over network  |
+|  08 |   8 | EGP      | unused routing protocol                  |
+|  11 |  17 | UDP      | faster but unreliable byte transmission  |
+|  32 |  50 | ESP      | provides auth, integrity, and protection |
+|  33 |  51 | AH       | authenticates origin and integrity       |
+*** 16 bits - Header Checksum
+    simple checksum of datagram
+    checked at each hop
+    datagram is discarded if this fails (assumed data corruption)
+*** 32 bits - Source IP Address
+*** 32 bits - Destination IP Address
+*** Options
+    very rarely used, feel free to skip this section
+**** 8 bits - Option-Type
+***** 1 bit - Copied Flag
+****** 0
+       indicates option is NOT to be copied to fragments if data is fragmented
+****** 1
+       indicates option is to be copied to fragments if fragmented
+***** 2 bits - Option Class
+****** 0
+       default
+       "Control"
+****** 2
+       used for debugging
+       measurement used for Internet Timestamp option (?)
+***** 5 bits - Option Number
+****** 0
+       special case indicating the end of the options field
+         this means there are no Option Length or Option Data fields
+****** 1 - No Operation
+       same as 0
+****** 2 - Security
+       sets option length to 11 bytes (88 bits)
+       used to carry security, compartmentation, user group, and
+         handling restriction codes for compliance with US DoD
+****** 3 - Loose Source Routing
+       provides specific routes that datagram can be routed through
+       records route information
+****** 4 - Internet Timestamp
+       records when (but not where) it gets to each hop
+       the device at each hop adds a new timestamp to this option
+       size set by source
+       cannot be enlarged
+       if datagram reaches next hop and there is no space left,
+         overflow count is incremented
+       if there is some space but not enough for another full timestamp OR
+       if overflow count itself overflows
+         datagram is considered in error and is discarded
+         an ICMP parameter problem message may be sent to source
+****** 7 - Record Route
+       exactly what it sounds like
+       the device at each hop adds its IP to this option
+       size set by source
+       cannot be enlarged
+       just stops recording additional IPs if overflow occurs
+****** 8 - Stream ID
+       provides a way for the 16-bit SATNET stream ID to be carried through
+         networks that don't support the stream concept
+       must be copied on fragmentation
+****** 9 - Strict Source Routing
+       provides specific IP addresses that datagram can be routed to
+       each hop MUST send the datagram directly to the next address
+       records route information
+****** 18 - Traceroute
+       used in the enhanced implementation of traceroute
+**** Option Length
+     values for this are supplied in Option-Type field
+**** Option Data
+     what is stored here is dependent on the value of the Option-Type field
+***** Security
+****** 16 bits - Security
+       00000000 00000000 - Unclassified
+       11110001 00110101 - Confidential
+       01111000 10011010 - Encrypted for Transmission Only (EFTO)
+       10111100 01001101 - I have no idea what this stands for (MMMM)
+       01011110 00100110 - Peer Review Oversight Group(?)(PROG)
+       10101111 00010011 - Restricted
+       11010111 10001000 - Secret
+       01101011 11000101 - Top Secret
+       00110101 11100010 - Reserved
+       10011010 11110001 - Reserved
+       01001101 01111000 - Reserved
+       00100100 10111101 - Reserved
+       00010011 01011110 - Reserved
+       10001001 10101111 - Reserved
+       11000100 11010110 - Reserved
+       11100010 01101011 - Reserved
+****** 16 bits - Compartments
+       all 0s when data is not compartmented
+       all other values available from US Defense Intelligence Agency (DIA)
+****** 16 bits - Handling Restrictions
+       classification and release info
+       values are alphanumeric digraphs (8 of them?)
+       values defined in DIA Manual (DIAM) 65-19 "Standard Security Markings"
+****** 24 bits - Transmission Control Code
+       allows for segregation of traffic
+       define controlled communities of subscribers
+       values are trigraphs (8 of them?)
+       values defined in HQ DCA Code 530
+* Address Resolution Protocol (ARP)
+  used to discover MAC address of known IP
